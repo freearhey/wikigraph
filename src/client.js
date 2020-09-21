@@ -33,13 +33,17 @@ for (let { property, label, datatype } of config.property) {
   properties[property] = _genFieldNameByLabel(label)
 }
 
-const client = new DataLoader(ids => {
-  return getItemsByIds(ids)
+const client = new DataLoader(keys => {
+  const args = keys[0].split('_')
+  let id = args[0]
+  let lang = args[1]
+  return getItemsByIds(id, lang)
 })
 
-const getItemsByIds = ids => {
+const getItemsByIds = (id, lang = 'en') => {
   const url = wdk.getEntities({
-    ids: ids,
+    ids: [id],
+    languages: [lang],
     format: 'json'
   })
 
@@ -49,23 +53,19 @@ const getItemsByIds = ids => {
       return response.data.entities
     })
     .then(res => {
-      return ids.map(id => {
-        return new Entity(res[id])
+      return [id].map(id => {
+        return new Entity(res[id], lang)
       })
     })
 }
 
 class Entity {
-  constructor(rawData) {
+  constructor(rawData, lang) {
     this.rawData = rawData
     this.id = rawData.id
-    this.labels = rawData.labels
+    this.lang = lang
+    this.label = rawData.labels[lang] ? rawData.labels[lang].value : null
     this._processClaims()
-  }
-
-  label({ lang }) {
-    const label = this.labels[lang]
-    return label && label.value
   }
 
   _processClaims() {
@@ -107,8 +107,7 @@ class Entity {
             return response.data.entities
           })
           .then(res => {
-            console.log(res[itemId].labels['en'].value)
-            return res[itemId].labels['en'].value
+            return res[itemId].labels[this.lang] ? res[itemId].labels[this.lang].value : null
           })
       case 'time':
         // TODO: add a time type

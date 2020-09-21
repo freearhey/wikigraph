@@ -12,10 +12,12 @@ requests can be made.`,
       entity: {
         type: EntityType,
         args: {
-          id: { type: GraphQLString }
+          id: { type: GraphQLString },
+          lang: { type: GraphQLString }
         },
-        resolve: (_, { id }) => {
-          return wiki.load(id)
+        resolve: (_, { id, lang }) => {
+          let key = `${id}_${lang}`
+          return wiki.load(key)
         }
       }
     })

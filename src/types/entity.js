@@ -1,4 +1,4 @@
-import { GraphQLObjectType, GraphQLString, GraphQLNonNull, GraphQLList } from 'graphql'
+import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
 
 import { remove as removeDiacritics } from 'diacritics'
 import config from '../config.json'
@@ -10,17 +10,10 @@ export default new GraphQLObjectType({
     Object.assign(
       {
         id: {
-          description: `Wikidata's item id, for exampe Q42.`,
           type: GraphQLString
         },
         label: {
-          type: GraphQLString,
-          args: {
-            lang: {
-              name: 'lang',
-              type: new GraphQLNonNull(GraphQLString)
-            }
-          }
+          type: GraphQLString
         }
       },
       _generateNamedPropertyList()
