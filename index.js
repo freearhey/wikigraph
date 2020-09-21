@@ -18401,47 +18401,41 @@ var config = {
 	property: property
 };
 
-// TODO: add qualiter/reference
-// sometimes the property have values too:
-// for example, spouse (P26) can also have start time, end time qualifiter
-// And they all can have multiple references
-const PropertyValueType = new graphql.GraphQLObjectType({
-  name: 'PropertyValue',
-  description: `A peroperty's value`,
-  fields: () => ({ type: WikiDataValueType })
+var EntityType = new graphql.GraphQLObjectType({
+  name: 'Entity',
+  description: `Wikidata entity.`,
+  fields: () =>
+    Object.assign(
+      {
+        id: {
+          description: `Wikidata's item id, for exampe Q42.`,
+          type: graphql.GraphQLString
+        },
+        label: {
+          type: graphql.GraphQLString,
+          args: {
+            lang: {
+              name: 'lang',
+              type: new graphql.GraphQLNonNull(graphql.GraphQLString)
+            }
+          }
+        }
+      },
+      _generateNamedPropertyList()
+    )
 });
 
-let EntityType = null;
+const _generateNamedPropertyList = () => {
+  let fields = {};
+  config.property.forEach(({ property, label, datatype }) => {
+    const fieldName = _genFieldNameByLabel(label);
+    fields[fieldName] = {
+      type: new graphql.GraphQLList(graphql.GraphQLString)
+    };
+  });
 
-const WikiDataStringType = new graphql.GraphQLObjectType({
-  name: 'WikiDataString',
-  description: `Just string`,
-  fields: () => ({
-    value: {
-      type: graphql.GraphQLString,
-      resolve(obj) {
-        return obj
-      }
-    }
-  })
-});
-
-// TODO: maybe the most complex data type
-// see https://www.wikidata.org/wiki/Special:ListDatatypes
-// Because of the property can have different type of value
-// for example, date of birth (P569) is should be a datetime object
-const WikiDataValueType = new graphql.GraphQLUnionType({
-  name: 'WikiDataValue',
-  description: `An wikidata value type`,
-  types: [EntityType, WikiDataStringType],
-  resolveType(value) {
-    if (typeof value == 'string') {
-      return WikiDataStringType
-    }
-    // fallback to entity type, need more detail
-    return EntityType
-  }
-});
+  return fields
+};
 
 const _genFieldNameByLabel = label => {
   // genertate property name
@@ -18467,43 +18461,33 @@ const _genFieldNameByLabel = label => {
   return newLabel.split(' ').join('_')
 };
 
-const _generateNamedPropertyList = () => {
-  let fields = {};
-  config.property.forEach(({ property, label, datatype }) => {
-    const fieldName = _genFieldNameByLabel(label);
-    fields[fieldName] = {
-      type: graphql.GraphQLString
-    };
-  });
+const _genFieldNameByLabel$1 = label => {
+  // genertate property name
+  // maximum frequency of audible sound =>  maximum_frequency_of_audible_sound
 
-  return fields
+  // remove some diacritics as in https://www.wikidata.org/wiki/Property:P380
+  let newLabel = diacritics.remove(label);
+
+  newLabel = newLabel
+    .toLowerCase()
+    .replace(/[,()\/\.]/g, '')
+    .replace(/[-–]/g, '_') // https://www.wikidata.org/wiki/Property:P2170
+    .replace(/[']/g, '_')
+    .replace(/[:]/g, '_')
+    .replace(/[+]/g, '_')
+    .replace(/[&]/g, '_')
+    .replace(/[!]/g, '_');
+
+  // https://www.wikidata.org/wiki/Property:P3605
+  if (!isNaN(newLabel[0])) {
+    newLabel = `p_${newLabel}`;
+  }
+  return newLabel.split(' ').join('_')
 };
-
-EntityType = new graphql.GraphQLObjectType({
-  name: 'Entity',
-  description: `Wikidata entity.`,
-  fields: () =>
-    Object.assign(
-      {
-        id: {
-          description: `Wikidata's item id, for exampe Q42.`,
-          type: graphql.GraphQLString
-        },
-        label: {
-          type: graphql.GraphQLString,
-          args: {
-            lang: {
-              name: 'lang',
-              type: new graphql.GraphQLNonNull(graphql.GraphQLString)
-            }
-          }
-        }
-      },
-      _generateNamedPropertyList()
-    )
-});
-
-var EntityType$1 = EntityType;
+const properties = {};
+for (let { property, label, datatype } of config.property) {
+  properties[property] = _genFieldNameByLabel$1(label);
+}
 
 const client = new DataLoader__default['default'](ids => {
   return getItemsByIds(ids)
@@ -18521,17 +18505,18 @@ const getItemsByIds = ids => {
       return response.data.entities
     })
     .then(res => {
-      return ids.map(id => new Entity(res[id]))
+      return ids.map(id => {
+        return new Entity(res[id])
+      })
     })
 };
 
 class Entity {
   constructor(rawData) {
-    // console.log(rawData.claims)
     this.rawData = rawData;
     this.id = rawData.id;
     this.labels = rawData.labels;
-    this.claims = rawData.claims;
+    this._processClaims();
   }
 
   label({ lang }) {
@@ -18539,10 +18524,13 @@ class Entity {
     return label && label.value
   }
 
-  property({ id }) {
-    const value = this.claims[id];
-    if (value) {
-      return this._processClaimItems(value)
+  _processClaims() {
+    const claims = this.rawData.claims;
+    for (let key in claims) {
+      let label = this._getPropertyLabel(key);
+      if (label) {
+        this[label] = this._processClaimItems(claims[key]);
+      }
     }
   }
 
@@ -18555,15 +18543,27 @@ class Entity {
   _processClaimItem(item) {
     // TODO: dealing with other types
     const mainsnak = item.mainsnak;
-    console.log(mainsnak);
     return this._processMainSnak(mainsnak)
   }
 
-  _processMainSnak(mainsnak) {
+  async _processMainSnak(mainsnak) {
     switch (mainsnak.datatype) {
       case 'wikibase-item':
         const itemId = mainsnak.datavalue.value.id;
-        return itemLoader.load(itemId)
+        const url = wdk__default['default'].getEntities({
+          ids: itemId,
+          format: 'json'
+        });
+
+        return await axios__default['default']
+          .get(url)
+          .then(function (response) {
+            return response.data.entities
+          })
+          .then(res => {
+            console.log(res[itemId].labels['en'].value);
+            return res[itemId].labels['en'].value
+          })
       case 'time':
         // TODO: add a time type
         return mainsnak.datavalue.value.time.toString()
@@ -18574,6 +18574,10 @@ class Entity {
         return mainsnak.datavalue.value
     }
   }
+
+  _getPropertyLabel(id) {
+    return properties[id]
+  }
 }
 
 var schema = new graphql.GraphQLSchema({
@@ -18583,7 +18587,7 @@ var schema = new graphql.GraphQLSchema({
 requests can be made.`,
     fields: () => ({
       entity: {
-        type: EntityType$1,
+        type: EntityType,
         args: {
           id: { type: graphql.GraphQLString }
         },

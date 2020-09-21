@@ -2,6 +2,37 @@ import DataLoader from 'dataloader'
 import wdk from 'wikidata-sdk'
 import axios from 'axios'
 
+const _genFieldNameByLabel = label => {
+  // genertate property name
+  // maximum frequency of audible sound =>  maximum_frequency_of_audible_sound
+
+  // remove some diacritics as in https://www.wikidata.org/wiki/Property:P380
+  let newLabel = removeDiacritics(label)
+
+  newLabel = newLabel
+    .toLowerCase()
+    .replace(/[,()\/\.]/g, '')
+    .replace(/[-–]/g, '_') // https://www.wikidata.org/wiki/Property:P2170
+    .replace(/[']/g, '_')
+    .replace(/[:]/g, '_')
+    .replace(/[+]/g, '_')
+    .replace(/[&]/g, '_')
+    .replace(/[!]/g, '_')
+
+  // https://www.wikidata.org/wiki/Property:P3605
+  if (!isNaN(newLabel[0])) {
+    newLabel = `p_${newLabel}`
+  }
+  return newLabel.split(' ').join('_')
+}
+
+import { remove as removeDiacritics } from 'diacritics'
+import config from './config.json'
+const properties = {}
+for (let { property, label, datatype } of config.property) {
+  properties[property] = _genFieldNameByLabel(label)
+}
+
 const client = new DataLoader(ids => {
   return getItemsByIds(ids)
 })
@@ -18,17 +49,18 @@ const getItemsByIds = ids => {
       return response.data.entities
     })
     .then(res => {
-      return ids.map(id => new Entity(res[id]))
+      return ids.map(id => {
+        return new Entity(res[id])
+      })
     })
 }
 
 class Entity {
   constructor(rawData) {
-    // console.log(rawData.claims)
     this.rawData = rawData
     this.id = rawData.id
     this.labels = rawData.labels
-    this.claims = rawData.claims
+    this._processClaims()
   }
 
   label({ lang }) {
@@ -36,10 +68,15 @@ class Entity {
     return label && label.value
   }
 
-  property({ id }) {
-    const value = this.claims[id]
-    if (value) {
-      return this._processClaimItems(value)
+  _processClaims() {
+    const claims = this.rawData.claims
+    for (let key in claims) {
+      let label = this._getPropertyLabel(key)
+      if (label) {
+        this[label] = this._processClaimItems(claims[key])
+      } else {
+        // console.log(key, label)
+      }
     }
   }
 
@@ -52,26 +89,40 @@ class Entity {
   _processClaimItem(item) {
     // TODO: dealing with other types
     const mainsnak = item.mainsnak
-    console.log(mainsnak)
     return this._processMainSnak(mainsnak)
   }
 
-  _processMainSnak(mainsnak) {
+  async _processMainSnak(mainsnak) {
     switch (mainsnak.datatype) {
       case 'wikibase-item':
         const itemId = mainsnak.datavalue.value.id
-        return itemLoader.load(itemId)
-        break
+        const url = wdk.getEntities({
+          ids: itemId,
+          format: 'json'
+        })
+
+        return await axios
+          .get(url)
+          .then(function (response) {
+            return response.data.entities
+          })
+          .then(res => {
+            console.log(res[itemId].labels['en'].value)
+            return res[itemId].labels['en'].value
+          })
       case 'time':
         // TODO: add a time type
         return mainsnak.datavalue.value.time.toString()
-        break
       case 'external-id':
       case 'string':
         return mainsnak.datavalue.value
       default:
         return mainsnak.datavalue.value
     }
+  }
+
+  _getPropertyLabel(id) {
+    return properties[id]
   }
 }
 
