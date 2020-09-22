@@ -1,37 +1,7 @@
 import DataLoader from 'dataloader'
 import wdk from 'wikidata-sdk'
 import axios from 'axios'
-
-const _genFieldNameByLabel = label => {
-  // genertate property name
-  // maximum frequency of audible sound =>  maximum_frequency_of_audible_sound
-
-  // remove some diacritics as in https://www.wikidata.org/wiki/Property:P380
-  let newLabel = removeDiacritics(label)
-
-  newLabel = newLabel
-    .toLowerCase()
-    .replace(/[,()\/\.]/g, '')
-    .replace(/[-–]/g, '_') // https://www.wikidata.org/wiki/Property:P2170
-    .replace(/[']/g, '_')
-    .replace(/[:]/g, '_')
-    .replace(/[+]/g, '_')
-    .replace(/[&]/g, '_')
-    .replace(/[!]/g, '_')
-
-  // https://www.wikidata.org/wiki/Property:P3605
-  if (!isNaN(newLabel[0])) {
-    newLabel = `p_${newLabel}`
-  }
-  return newLabel.split(' ').join('_')
-}
-
-import { remove as removeDiacritics } from 'diacritics'
-import config from './config.json'
-const properties = {}
-for (let { property, label, datatype } of config.property) {
-  properties[property] = _genFieldNameByLabel(label)
-}
+import properties from './properties.json'
 
 const client = new DataLoader(keys => {
   const args = keys[0].split('_')
@@ -44,6 +14,7 @@ const getItemsByIds = (id, lang = 'en') => {
   const url = wdk.getEntities({
     ids: [id],
     languages: [lang],
+    props: ['labels', 'claims'],
     format: 'json'
   })
 
@@ -68,14 +39,14 @@ class Entity {
     this._processClaims()
   }
 
-  _processClaims() {
+  async _processClaims() {
     const claims = this.rawData.claims
     for (let key in claims) {
-      let label = this._getPropertyLabel(key)
+      let label = properties[key]
       if (label) {
         this[label] = this._processClaimItems(claims[key])
       } else {
-        // console.log(key, label)
+        console.log(key, label)
       }
     }
   }
@@ -118,10 +89,6 @@ class Entity {
       default:
         return mainsnak.datavalue.value
     }
-  }
-
-  _getPropertyLabel(id) {
-    return properties[id]
   }
 }
 
