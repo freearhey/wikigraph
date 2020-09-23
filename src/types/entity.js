@@ -1,4 +1,4 @@
-import { GraphQLObjectType, GraphQLString } from 'graphql'
+import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
 import properties from '../properties.json'
 import { propertyLoader } from '../loaders.js'
 
@@ -6,7 +6,7 @@ const _generateNamedPropertyList = () => {
   let fields = {}
   for (let propName of Object.values(properties)) {
     fields[propName] = {
-      type: GraphQLString,
+      type: new GraphQLList(GraphQLString),
       resolve: obj => {
         let key = `${obj.id}.${propName}.${obj.lang}`
         return propertyLoader.load(key)
@@ -33,7 +33,7 @@ export default new GraphQLObjectType({
           type: GraphQLString
         },
         aliases: {
-          type: GraphQLString
+          type: new GraphQLList(GraphQLString)
         }
       },
       _generateNamedPropertyList()

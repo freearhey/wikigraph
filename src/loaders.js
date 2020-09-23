@@ -37,7 +37,7 @@ const getPropByName = (entityId, propName, lang = 'en') => {
       return response.data.results.bindings[0]
     })
     .then(data => {
-      return data[propName] && data[propName].value ? data[propName].value : null
+      return data[propName] && data[propName].value ? data[propName].value.split(', ') : null
     })
 }
 
@@ -54,7 +54,7 @@ const getItemById = (id, lang = 'en') => {
         id: data.id,
         label: data.labels[lang] ? data.labels[lang].value : null,
         description: data.descriptions[lang] ? data.descriptions[lang].value : null,
-        aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value).join(', ') : null,
+        aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value) : null,
         lang
       }
     })
