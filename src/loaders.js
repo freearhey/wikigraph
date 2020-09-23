@@ -42,7 +42,7 @@ const getPropByName = (entityId, propName, lang = 'en') => {
 }
 
 const getItemById = (id, lang = 'en') => {
-  const url = wdk.getEntities(id, lang, ['labels'], 'json')
+  const url = wdk.getEntities(id, lang, ['labels', 'descriptions', 'aliases'], 'json')
 
   return axios
     .get(url)
@@ -53,6 +53,8 @@ const getItemById = (id, lang = 'en') => {
       return {
         id: data.id,
         label: data.labels[lang] ? data.labels[lang].value : null,
+        description: data.descriptions[lang] ? data.descriptions[lang].value : null,
+        aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value).join(', ') : null,
         lang
       }
     })

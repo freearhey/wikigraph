@@ -28,6 +28,12 @@ export default new GraphQLObjectType({
         },
         label: {
           type: GraphQLString
+        },
+        description: {
+          type: GraphQLString
+        },
+        aliases: {
+          type: GraphQLString
         }
       },
       _generateNamedPropertyList()
