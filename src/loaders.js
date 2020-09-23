@@ -3,16 +3,15 @@ import wdk from 'wikidata-sdk'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 
-const entityLoader = new DataLoader(async keys => {
-  let values = []
+const entityLoader = new DataLoader(keys => {
+  let ids = []
+  let lang = keys[0].split('.')[1]
+  keys.forEach(key => {
+    let [id, _] = key.split('.')
+    ids.push(id)
+  })
 
-  for (let key of keys) {
-    const args = key.split('.')
-    let value = await getItemById(args[0], args[1])
-    values.push(value)
-  }
-
-  return values
+  return getItemById(ids, lang)
 })
 
 const propertyLoader = new DataLoader(async keys => {
@@ -41,22 +40,23 @@ const getPropByName = (entityId, propName, lang = 'en') => {
     })
 }
 
-const getItemById = (id, lang = 'en') => {
-  const url = wdk.getEntities(id, lang, ['labels', 'descriptions', 'aliases'], 'json')
+const getItemById = (ids, lang = 'en') => {
+  const url = wdk.getEntities(ids, lang, ['labels', 'descriptions', 'aliases'], 'json')
 
   return axios
     .get(url)
-    .then(function (response) {
-      return response.data.entities[id]
-    })
-    .then(data => {
-      return {
-        id: data.id,
-        label: data.labels[lang] ? data.labels[lang].value : null,
-        description: data.descriptions[lang] ? data.descriptions[lang].value : null,
-        aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value) : null,
-        lang
-      }
+    .then(response => response.data.entities)
+    .then(entities => {
+      return ids.map(id => {
+        let data = entities[id]
+        return {
+          id: data.id,
+          label: data.labels[lang] ? data.labels[lang].value : null,
+          description: data.descriptions[lang] ? data.descriptions[lang].value : null,
+          aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value) : null,
+          lang
+        }
+      })
     })
 }
 
