@@ -1,7 +1,7 @@
 import { GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql'
 
 import EntityType from './types/entity.js'
-import wiki from './client.js'
+import { entityLoader } from './loaders.js'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -13,11 +13,11 @@ requests can be made.`,
         type: EntityType,
         args: {
           id: { type: GraphQLString },
-          lang: { type: GraphQLString }
+          lang: { type: GraphQLString, defaultValue: 'en' }
         },
         resolve: (_, { id, lang }) => {
-          let key = `${id}_${lang}`
-          return wiki.load(key)
+          let key = `${id}.${lang}`
+          return entityLoader.load(key)
         }
       }
     })
