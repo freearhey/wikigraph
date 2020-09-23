@@ -1,28 +1,30 @@
 import axios from 'axios'
+import wdk from 'wikidata-sdk'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
-import wdk from 'wikidata-sdk'
 
-const entityLoader = new DataLoader(keys => {
-  const args = keys[0].split('.')
-  let id = args[0]
-  let lang = args[1]
-  return getItemById(id, lang)
-})
-
-const propertyLoader = new DataLoader(async keys => {
-  let promises = []
+const entityLoader = new DataLoader(async keys => {
+  let values = []
 
   for (let key of keys) {
     const args = key.split('.')
-    let entityId = args[0]
-    let propName = args[1]
-    let lang = args[2]
-    let promise = await getPropByName(entityId, propName, lang)
-    promises.push(promise)
+    let value = await getItemById(args[0], args[1])
+    values.push(value)
   }
 
-  return promises
+  return values
+})
+
+const propertyLoader = new DataLoader(async keys => {
+  let values = []
+
+  for (let key of keys) {
+    const args = key.split('.')
+    let value = await getPropByName(args[0], args[1], args[2])
+    values.push(value)
+  }
+
+  return values
 })
 
 const getPropByName = (entityId, propName, lang = 'en') => {
@@ -35,7 +37,7 @@ const getPropByName = (entityId, propName, lang = 'en') => {
       return response.data.results.bindings[0]
     })
     .then(data => {
-      return data[propName].value || null
+      return data[propName] && data[propName].value ? data[propName].value : null
     })
 }
 
@@ -48,13 +50,11 @@ const getItemById = (id, lang = 'en') => {
       return response.data.entities[id]
     })
     .then(data => {
-      return [
-        {
-          id: data.id,
-          label: data.labels[lang].value,
-          lang
-        }
-      ]
+      return {
+        id: data.id,
+        label: data.labels[lang] ? data.labels[lang].value : null,
+        lang
+      }
     })
 }
 
