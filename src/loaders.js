@@ -10,13 +10,20 @@ const entityLoader = new DataLoader(keys => {
   return getItemById(id, lang)
 })
 
-const propertyLoader = keys => {
-  const args = keys.split('.')
-  let entityId = args[0]
-  let propName = args[1]
-  let lang = args[2]
-  return getPropByName(entityId, propName, lang)
-}
+const propertyLoader = new DataLoader(async keys => {
+  let promises = []
+
+  for (let key of keys) {
+    const args = key.split('.')
+    let entityId = args[0]
+    let propName = args[1]
+    let lang = args[2]
+    let promise = await getPropByName(entityId, propName, lang)
+    promises.push(promise)
+  }
+
+  return promises
+})
 
 const getPropByName = (entityId, propName, lang = 'en') => {
   const sparql = queryBuilder.property(entityId, propName, lang)
@@ -28,8 +35,7 @@ const getPropByName = (entityId, propName, lang = 'en') => {
       return response.data.results.bindings[0]
     })
     .then(data => {
-      const value = data[propName].value || null
-      return value
+      return data[propName].value || null
     })
 }
 

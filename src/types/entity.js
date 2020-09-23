@@ -9,7 +9,7 @@ const _generateNamedPropertyList = () => {
       type: GraphQLString,
       resolve: obj => {
         let key = `${obj.id}.${propName}.${obj.lang}`
-        return propertyLoader(key)
+        return propertyLoader.load(key)
       }
     }
   }
