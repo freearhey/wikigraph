@@ -32,6 +32,9 @@ export default new GraphQLObjectType({
         description: {
           type: GraphQLString
         },
+        wiki_url: {
+          type: GraphQLString
+        },
         aliases: {
           type: new GraphQLList(GraphQLString)
         }

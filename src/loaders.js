@@ -1,5 +1,4 @@
 import axios from 'axios'
-import wdk from 'wikidata-sdk'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 
@@ -49,7 +48,10 @@ const getItemById = keys => {
     ids.push(id)
   })
 
-  const url = wdk.getEntities(ids, lang, ['labels', 'descriptions', 'aliases'], 'json')
+  const props = ['labels', 'descriptions', 'aliases', 'sitelinks/urls']
+  const url = `https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&ids=${ids.join(
+    '|'
+  )}&languages=${lang}&sitefilter=${lang}wiki&props=${props.join('|')}`
 
   return axios
     .get(url)
@@ -63,6 +65,7 @@ const getItemById = keys => {
           label: data.labels[lang] ? data.labels[lang].value : null,
           description: data.descriptions[lang] ? data.descriptions[lang].value : null,
           aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value) : null,
+          wiki_url: data.sitelinks[`${lang}wiki`] ? data.sitelinks[`${lang}wiki`].url : null,
           lang
         }
       })
