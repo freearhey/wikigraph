@@ -1,26 +1,43 @@
 import properties from './properties.json'
 
-function getKeyByValue(object, value) {
-  return Object.keys(object).find(key => object[key] === value)
+function getPropIdByName(name) {
+  return Object.keys(properties).find(id => properties[id] === name)
 }
 
 export default {
-  property(entityId, propName, lang) {
-    let propId = getKeyByValue(properties, propName)
-    let query = `
-      SELECT
-        (group_concat(DISTINCT ?p_${propName}Label;separator=", ") as ?${propName})
-      WHERE { 
-        BIND(wd:${entityId} AS ?entity). 
-        OPTIONAL { 
-          ?entity wdt:${propId} ?p_${propName} . 
-        } 
-        SERVICE wikibase:label {
-          bd:serviceParam wikibase:language "${lang}". 
-          ?p_${propName} rdfs:label ?p_${propName}Label . 
-        }
+  property(entityIds, propNames, lang = 'en') {
+    let props = propNames.map(propName => {
+      return {
+        id: getPropIdByName(propName),
+        name: propName
       }
-    `
+    })
+
+    let query = `SELECT ?entity`
+
+    props.forEach(prop => {
+      query += ` (group_concat(DISTINCT ?p_${prop.name}Label;separator=", ") as ?${prop.name})`
+    })
+
+    query += ` WHERE { VALUES ?entity {`
+
+    entityIds.forEach(entityId => {
+      query += ` wd:${entityId}`
+    })
+
+    query += `}`
+
+    props.forEach(prop => {
+      query += `OPTIONAL { ?entity wdt:${prop.id} ?p_${prop.name}. }`
+    })
+
+    query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}".`
+
+    props.forEach(prop => {
+      query += `?p_${prop.name} rdfs:label ?p_${prop.name}Label.`
+    })
+
+    query += `}} GROUP BY ?entity`
 
     return query
   }

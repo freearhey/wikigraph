@@ -4,51 +4,60 @@ import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 
 const entityLoader = new DataLoader(keys => {
-  let ids = []
+  return getItemById(keys)
+})
+
+const propertyLoader = new DataLoader(keys => {
+  return getPropByName(keys)
+})
+
+const getPropByName = keys => {
+  let entityIds = {}
+  let propNames = {}
   let lang = keys[0].split('.')[1]
   keys.forEach(key => {
-    let [id, _] = key.split('.')
-    ids.push(id)
+    let [entityId, _, propName] = key.split('.')
+    entityIds[entityId] = true
+    propNames[propName] = true
   })
 
-  return getItemById(ids, lang)
-})
-
-const propertyLoader = new DataLoader(async keys => {
-  let values = []
-
-  for (let key of keys) {
-    const args = key.split('.')
-    let value = await getPropByName(args[0], args[1], args[2])
-    values.push(value)
-  }
-
-  return values
-})
-
-const getPropByName = (entityId, propName, lang = 'en') => {
-  const sparql = queryBuilder.property(entityId, propName, lang)
+  const sparql = queryBuilder.property(Object.keys(entityIds), Object.keys(propNames), lang)
   const data = 'query=' + encodeURI(sparql)
 
   return axios
     .post('https://query.wikidata.org/sparql', data)
     .then(function (response) {
-      return response.data.results.bindings[0]
+      return response.data.results.bindings
     })
-    .then(data => {
-      return data[propName] && data[propName].value ? data[propName].value.split(', ') : null
+    .then(entities => {
+      return keys.map(key => {
+        let [entityId, lang, propName] = key.split('.')
+        let entity = entities.find(item => item.entity.value.indexOf(entityId) > -1)
+        let value =
+          entity[propName] && entity[propName].value ? entity[propName].value.split(', ') : null
+
+        return value
+      })
     })
 }
 
-const getItemById = (ids, lang = 'en') => {
+const getItemById = keys => {
+  let ids = []
+  let lang = keys[0].split('.')[1]
+  keys.forEach(key => {
+    let id = key.split('.')[0]
+    ids.push(id)
+  })
+
   const url = wdk.getEntities(ids, lang, ['labels', 'descriptions', 'aliases'], 'json')
 
   return axios
     .get(url)
     .then(response => response.data.entities)
     .then(entities => {
-      return ids.map(id => {
-        let data = entities[id]
+      return keys.map(key => {
+        let [entityId, lang] = key.split('.')
+        let data = entities[entityId]
         return {
           id: data.id,
           label: data.labels[lang] ? data.labels[lang].value : null,

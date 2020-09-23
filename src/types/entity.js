@@ -8,7 +8,7 @@ const _generateNamedPropertyList = () => {
     fields[propName] = {
       type: new GraphQLList(GraphQLString),
       resolve: obj => {
-        let key = `${obj.id}.${propName}.${obj.lang}`
+        let key = `${obj.id}.${obj.lang}.${propName}`
         return propertyLoader.load(key)
       }
     }
