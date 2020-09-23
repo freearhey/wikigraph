@@ -1,7 +1,6 @@
 import { GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql'
-
-import EntityType from './types/entity.js'
 import { entityLoader } from './loaders.js'
+import EntityType from './types/entity.js'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
