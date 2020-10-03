@@ -1,43 +1,41 @@
 export default {
-  property(entityIds, propIds, lang = 'en') {
-    let query = `SELECT ?entity ?prop ?statement (?vLabel as ?value)`
+    property(entityIds, propIds, lang = 'en') {
+        let query = `SELECT ?entity ?prop ?statement (?vLabel as ?value)`
 
-    query += ` WHERE {`
+        query += ` WHERE {`
 
-    query += ` VALUES ?entity {`
+        query += ` VALUES ?entity {`
 
-    entityIds.forEach(entityId => {
-      query += ` wd:${entityId}`
-    })
+        entityIds.forEach(entityId => {
+            query += ` wd:${entityId}`
+        })
 
-    query += `}`
+        query += `}`
 
-    query += ` VALUES ?prop {`
+        query += ` VALUES ?prop {`
 
-    propIds.forEach(pid => {
-      query += ` p:${pid}`
-    })
+        propIds.forEach(pid => {
+            query += ` p:${pid}`
+        })
 
-    query += `}`
+        query += `}`
 
-    query += ` VALUES ?ps {`
+        query += ` VALUES ?ps {`
 
-    propIds.forEach(pid => {
-      query += ` ps:${pid}`
-    })
+        propIds.forEach(pid => {
+            query += ` ps:${pid}`
+        })
 
-    query += `}`
+        query += `}`
 
-    query += ` OPTIONAL { ?entity ?prop ?statement }`
+        query += ` OPTIONAL { ?entity ?prop ?statement . ?statement ?ps ?v }`
 
-    query += `OPTIONAL { ?statement ?ps ?v }`
+        query += `filter (!isLiteral(?statement) || lang(?statement) = "" || lang(?statement) = "${lang}")`
 
-    query += `filter (!isLiteral(?statement) || lang(?statement) = "" || lang(?statement) = "${lang}")`
+        query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}" . ?v rdfs:label ?vLabel }`
 
-    query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}" . ?v rdfs:label ?vLabel }`
+        query += `}`
 
-    query += `}`
-
-    return query
-  }
+        return query
+    }
 }

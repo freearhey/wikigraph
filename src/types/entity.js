@@ -7,7 +7,7 @@ const _generateNamedPropertyList = () => {
   let fields = {}
   for (let prop of wdProps.all()) {
     fields[prop.slug] = {
-      type: new GraphQLList(ValueType),
+      type: new GraphQLList(GraphQLString),
       resolve: entity => {
         return propertyLoader.load([entity.id, entity.lang, prop.slug])
       }

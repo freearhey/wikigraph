@@ -46,13 +46,7 @@ const getPropByName = keys => {
           item => item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
         )
 
-        return items.map(item => {
-          return {
-            type: item.value.type,
-            value: item.value.value,
-            statement: item.statement.value
-          }
-        })
+        return items.map(item => item.value.value)
       })
     })
 }
