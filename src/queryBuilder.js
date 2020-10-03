@@ -1,25 +1,10 @@
-import properties from './properties.json'
-
-function getPropIdByName(name) {
-  return Object.keys(properties).find(id => properties[id] === name)
-}
-
 export default {
-  property(entityIds, propNames, lang = 'en') {
-    let props = propNames.map(propName => {
-      return {
-        id: getPropIdByName(propName),
-        name: propName
-      }
-    })
+  property(entityIds, propIds, lang = 'en') {
+    let query = `SELECT ?entity ?prop ?statement (?vLabel as ?value)`
 
-    let query = `SELECT ?entity`
+    query += ` WHERE {`
 
-    props.forEach(prop => {
-      query += ` (group_concat(DISTINCT ?p_${prop.name}Label;separator=", ") as ?${prop.name})`
-    })
-
-    query += ` WHERE { VALUES ?entity {`
+    query += ` VALUES ?entity {`
 
     entityIds.forEach(entityId => {
       query += ` wd:${entityId}`
@@ -27,17 +12,31 @@ export default {
 
     query += `}`
 
-    props.forEach(prop => {
-      query += `OPTIONAL { ?entity wdt:${prop.id} ?p_${prop.name}. }`
+    query += ` VALUES ?prop {`
+
+    propIds.forEach(pid => {
+      query += ` p:${pid}`
     })
 
-    query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}".`
+    query += `}`
 
-    props.forEach(prop => {
-      query += `?p_${prop.name} rdfs:label ?p_${prop.name}Label.`
+    query += ` VALUES ?ps {`
+
+    propIds.forEach(pid => {
+      query += ` ps:${pid}`
     })
 
-    query += `}} GROUP BY ?entity`
+    query += `}`
+
+    query += ` OPTIONAL { ?entity ?prop ?statement }`
+
+    query += `OPTIONAL { ?statement ?ps ?v }`
+
+    query += `filter (!isLiteral(?statement) || lang(?statement) = "" || lang(?statement) = "${lang}")`
+
+    query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}" . ?v rdfs:label ?vLabel }`
+
+    query += `}`
 
     return query
   }

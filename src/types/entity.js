@@ -1,15 +1,15 @@
 import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
-import properties from '../properties.json'
 import { propertyLoader } from '../loaders.js'
+import wdProps from '../wikidata-properties/index.js'
+import ValueType from './value.js'
 
 const _generateNamedPropertyList = () => {
   let fields = {}
-  for (let propName of Object.values(properties)) {
-    fields[propName] = {
-      type: new GraphQLList(GraphQLString),
-      resolve: obj => {
-        let key = `${obj.id}.${obj.lang}.${propName}`
-        return propertyLoader.load(key)
+  for (let prop of wdProps.all()) {
+    fields[prop.slug] = {
+      type: new GraphQLList(ValueType),
+      resolve: entity => {
+        return propertyLoader.load([entity.id, entity.lang, prop.slug])
       }
     }
   }

@@ -1,10 +1,7 @@
 import axios from 'axios'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
-
-const entityLoader = new DataLoader(keys => {
-  return getItemById(keys)
-})
+import wdProps from './wikidata-properties/index.js'
 
 const propertyLoader = new DataLoader(keys => {
   return getPropByName(keys)
@@ -13,15 +10,27 @@ const propertyLoader = new DataLoader(keys => {
 const getPropByName = keys => {
   let entityIds = {}
   let propNames = {}
-  let lang = keys[0].split('.')[1]
+  let lang = keys[0][1]
   keys.forEach(key => {
-    let [entityId, _, propName] = key.split('.')
+    let [entityId, _, propName] = key
     entityIds[entityId] = true
     propNames[propName] = true
   })
 
-  const sparql = queryBuilder.property(Object.keys(entityIds), Object.keys(propNames), lang)
+  let propIds = Object.keys(propNames)
+    .map(name => {
+      const prop = wdProps.find(name)
+
+      return prop ? prop.id : null
+    })
+    .filter(p => p)
+
+  if (!propIds.length) return keys.map(key => new Error(`No result for ${key}`))
+
+  const sparql = queryBuilder.property(Object.keys(entityIds), propIds, lang)
   const data = 'query=' + encodeURI(sparql)
+
+  // console.log(sparql)
 
   return axios
     .post('https://query.wikidata.org/sparql', data)
@@ -29,47 +38,23 @@ const getPropByName = keys => {
       return response.data.results.bindings
     })
     .then(entities => {
+      // console.log(entities)
       return keys.map(key => {
-        let [entityId, lang, propName] = key.split('.')
-        let entity = entities.find(item => item.entity.value.indexOf(entityId) > -1)
-        let value =
-          entity[propName] && entity[propName].value ? entity[propName].value.split(', ') : null
+        let [entityId, lang, propName] = key
+        let prop = wdProps.find(propName)
+        let items = entities.filter(
+          item => item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
+        )
 
-        return value
+        return items.map(item => {
+          return {
+            type: item.value.type,
+            value: item.value.value,
+            statement: item.statement.value
+          }
+        })
       })
     })
 }
 
-const getItemById = keys => {
-  let ids = []
-  let lang = keys[0].split('.')[1]
-  keys.forEach(key => {
-    let id = key.split('.')[0]
-    ids.push(id)
-  })
-
-  const props = ['labels', 'descriptions', 'aliases', 'sitelinks/urls']
-  const url = `https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&ids=${ids.join(
-    '|'
-  )}&languages=${lang}&sitefilter=${lang}wiki&props=${props.join('|')}`
-
-  return axios
-    .get(url)
-    .then(response => response.data.entities)
-    .then(entities => {
-      return keys.map(key => {
-        let [entityId, lang] = key.split('.')
-        let data = entities[entityId]
-        return {
-          id: data.id,
-          label: data.labels[lang] ? data.labels[lang].value : null,
-          description: data.descriptions[lang] ? data.descriptions[lang].value : null,
-          aliases: data.aliases[lang] ? data.aliases[lang].map(i => i.value) : null,
-          wiki_url: data.sitelinks[`${lang}wiki`] ? data.sitelinks[`${lang}wiki`].url : null,
-          lang
-        }
-      })
-    })
-}
-
-export { entityLoader, propertyLoader }
+export { propertyLoader }
