@@ -14,22 +14,66 @@ const propertyLoader = new DataLoader(keys => {
   return getPropByName(keys)
 })
 
+const searchLoader = new DataLoader(keys => {
+  keys = keys.map(JSON.parse)
+  return searchEntityByLabel(keys)
+})
+
+const searchEntityByLabel = keys => {
+  // console.log(keys)
+  const lang = keys[0][1]
+  const query = keys[0][0]
+  const first = keys[0][2]
+  const after = keys[0][3]
+
+  const params = {
+    action: 'wbsearchentities',
+    search: query,
+    strictlanguage: true,
+    language: lang,
+    uselang: lang,
+    type: 'item',
+    format: 'json',
+    limit: first,
+    continue: after
+  }
+
+  // console.log(params)
+
+  return axios
+    .get('https://www.wikidata.org/w/api.php', { params })
+    .then(response => response.data.search)
+    .then(entities => {
+      // console.log(entities)
+      if (!entities.length) return []
+
+      return keys.map(key => {
+        const lang = key[1]
+        return entities.map(entity => {
+          entity.lang = lang
+
+          return entity
+        })
+      })
+    })
+}
+
 const getEntityById = keys => {
   // console.log(keys)
-  let entityIds = {}
-  let lang = keys[0][1]
-  keys.forEach(key => {
+  const lang = keys[0][1]
+  const entityIds = keys.map(key => {
     let [entityId, _] = key
-    entityIds[entityId] = true
+
+    return entityId
   })
 
   const params = {
     action: 'wbgetentities',
-    ids: Object.keys(entityIds).join('|'),
-    languages: lang.split(',').join('|'),
-    props: ['aliases', 'descriptions', 'labels', 'sitelinks/urls'].join('|'),
-    format: 'json',
-    sitefilter: `${lang}wiki`
+    ids: entityIds.join('|'),
+    languages: lang,
+    uselang: lang,
+    props: ['aliases', 'descriptions', 'labels'].join('|'),
+    format: 'json'
   }
 
   // console.log(params)
@@ -47,15 +91,12 @@ const getEntityById = keys => {
         const description = entities[id]['descriptions'][lang]
           ? entities[id]['descriptions'][lang].value
           : null
-        const sitelink = entities[id]['sitelinks'][`${lang}wiki`]
-          ? entities[id]['sitelinks'][`${lang}wiki`].url
-          : null
         const aliases =
           entities[id]['aliases'][lang] && entities[id]['aliases'][lang].length
             ? entities[id]['aliases'][lang].map(i => i.value)
             : []
 
-        return { id, lang, label, description, sitelink, aliases }
+        return { id, lang, label, description, aliases }
       })
     })
 }
@@ -114,4 +155,4 @@ const getPropByName = keys => {
     })
 }
 
-export { entityLoader, propertyLoader }
+export { entityLoader, propertyLoader, searchLoader }

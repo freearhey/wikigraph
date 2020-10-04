@@ -1,7 +1,6 @@
 import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
 import { propertyLoader } from '../loaders.js'
 import wdProps from '../wikidata-properties/index.js'
-import ValueType from './value.js'
 
 const _generateNamedPropertyList = () => {
   let fields = {}
@@ -33,9 +32,6 @@ export default new GraphQLObjectType({
           type: GraphQLString
         },
         description: {
-          type: GraphQLString
-        },
-        sitelink: {
           type: GraphQLString
         },
         aliases: {
