@@ -26,9 +26,7 @@ export default new GraphQLSchema({
             description: 'Language to use for property values.'
           }
         },
-        resolve: (_, args) => {
-          return entityLoader.load(JSON.stringify([args.id, args.lang]))
-        }
+        resolve: (_, args) => entityLoader.load(JSON.stringify(Object.values(args)))
       },
       search: {
         type: new GraphQLList(EntityType),
@@ -44,15 +42,13 @@ export default new GraphQLSchema({
             defaultValue: 10,
             description: 'Maximal number of results.'
           },
-          after: {
+          offset: {
             type: GraphQLInt,
             defaultValue: 0,
             description: 'Offset where to continue a search.'
           }
         },
-        resolve: (_, args) => {
-          return searchLoader.load(JSON.stringify([args.query, args.lang, args.first, args.after]))
-        }
+        resolve: (_, args) => searchLoader.load(JSON.stringify(Object.values(args)))
       }
     })
   })

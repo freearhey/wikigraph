@@ -22,20 +22,16 @@ const searchLoader = new DataLoader(keys => {
 const searchEntityByLabel = keys => {
   // console.log(keys)
   const lang = keys[0][1]
-  const query = keys[0][0]
-  const first = keys[0][2]
-  const after = keys[0][3]
-
   const params = {
     action: 'wbsearchentities',
-    search: query,
+    search: keys[0][0],
     strictlanguage: true,
     language: lang,
     uselang: lang,
     type: 'item',
     format: 'json',
-    limit: first,
-    continue: after
+    limit: keys[0][2],
+    continue: keys[0][3]
   }
 
   // console.log(params)
