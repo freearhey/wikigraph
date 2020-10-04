@@ -1,4 +1,5 @@
 import axios from 'axios'
+import numeral from 'numeral'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 import wdProps from './wikidata-properties/index.js'
@@ -51,29 +52,27 @@ const getEntityById = keys => {
 }
 
 const getPropByName = keys => {
-  let entityIds = {}
-  let propNames = {}
-  let lang = keys[0][1]
-  keys.forEach(key => {
-    let [entityId, _, propName] = key
-    entityIds[entityId] = true
-    propNames[propName] = true
-  })
+  // console.log(keys)
+  const args = keys
+    .map(key => {
+      const [entityId, lang, propName] = key
+      const prop = wdProps.find(propName)
 
-  let propIds = Object.keys(propNames)
-    .map(name => {
-      const prop = wdProps.find(name)
-
-      return prop ? prop.id : null
+      return {
+        entityId,
+        propName,
+        propId: prop ? prop.id : null,
+        lang
+      }
     })
-    .filter(p => p)
+    .filter(i => i.propId)
 
-  if (!propIds.length) return keys.map(key => new Error(`No result for ${key}`))
+  // console.log(args)
 
-  const sparql = queryBuilder.property(Object.keys(entityIds), propIds, lang)
+  const sparql = queryBuilder.property(args)
   const data = 'query=' + encodeURI(sparql)
 
-  // console.log(sparql)
+  console.log(sparql)
 
   return axios
     .post('https://query.wikidata.org/sparql', data)
@@ -81,15 +80,27 @@ const getPropByName = keys => {
       return response.data.results.bindings
     })
     .then(entities => {
-      // console.log(entities)
+      console.log(entities)
       return keys.map(key => {
         let [entityId, lang, propName] = key
         let prop = wdProps.find(propName)
-        let items = entities.filter(
-          item => item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
-        )
+        let items = entities.filter(item => {
+          return item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
+        })
 
-        return items.map(item => item.value.value)
+        return items.map(item => {
+          let type = item.type ? item.type.value : null
+          let value = item.value ? item.value.value : null
+          let unit = item.unit ? item.unit.value : null
+
+          if (type && type.indexOf('QuantityValue') > -1) {
+            value = numeral(value).format('0,0')
+
+            return [value, unit].filter(v => v).join(' ')
+          }
+
+          return value
+        })
       })
     })
 }
