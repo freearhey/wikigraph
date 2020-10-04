@@ -15,6 +15,7 @@ const propertyLoader = new DataLoader(keys => {
 })
 
 const getEntityById = keys => {
+  // console.log(keys)
   let entityIds = {}
   let lang = keys[0][1]
   keys.forEach(key => {
@@ -31,22 +32,30 @@ const getEntityById = keys => {
     sitefilter: `${lang}wiki`
   }
 
+  // console.log(params)
+
   return axios
     .get('https://www.wikidata.org/w/api.php', { params })
     .then(response => response.data.entities)
     .then(entities => {
+      //console.log(entities)
       if (!entities) return []
 
       return keys.map(key => {
-        let [id, lang] = key
-        return {
-          id,
-          lang,
-          label: entities[id].labels[lang].value,
-          description: entities[id].descriptions[lang].value,
-          sitelink: entities[id].sitelinks[`${lang}wiki`].url,
-          aliases: entities[id].aliases[lang].map(i => i.value)
-        }
+        const [id, lang] = key
+        const label = entities[id]['labels'][lang] ? entities[id]['labels'][lang].value : null
+        const description = entities[id]['descriptions'][lang]
+          ? entities[id]['descriptions'][lang].value
+          : null
+        const sitelink = entities[id]['sitelinks'][`${lang}wiki`]
+          ? entities[id]['sitelinks'][`${lang}wiki`].url
+          : null
+        const aliases =
+          entities[id]['aliases'][lang] && entities[id]['aliases'][lang].length
+            ? entities[id]['aliases'][lang].map(i => i.value)
+            : []
+
+        return { id, lang, label, description, sitelink, aliases }
       })
     })
 }
@@ -72,7 +81,7 @@ const getPropByName = keys => {
   const sparql = queryBuilder.property(args)
   const data = 'query=' + encodeURI(sparql)
 
-  console.log(sparql)
+  // console.log(sparql)
 
   return axios
     .post('https://query.wikidata.org/sparql', data)
@@ -80,7 +89,7 @@ const getPropByName = keys => {
       return response.data.results.bindings
     })
     .then(entities => {
-      console.log(entities)
+      // console.log(entities)
       return keys.map(key => {
         let [entityId, lang, propName] = key
         let prop = wdProps.find(propName)
