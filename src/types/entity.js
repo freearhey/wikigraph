@@ -9,7 +9,7 @@ const _generateNamedPropertyList = () => {
     fields[prop.slug] = {
       type: new GraphQLList(GraphQLString),
       resolve: entity => {
-        return propertyLoader.load([entity.id, entity.lang, prop.slug])
+        return propertyLoader.load(JSON.stringify([entity.id, entity.lang, prop.slug]))
       }
     }
   }
@@ -26,13 +26,16 @@ export default new GraphQLObjectType({
         id: {
           type: GraphQLString
         },
+        lang: {
+          type: GraphQLString
+        },
         label: {
           type: GraphQLString
         },
         description: {
           type: GraphQLString
         },
-        wiki_url: {
+        sitelink: {
           type: GraphQLString
         },
         aliases: {

@@ -3,9 +3,52 @@ import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 import wdProps from './wikidata-properties/index.js'
 
+const entityLoader = new DataLoader(keys => {
+  keys = keys.map(JSON.parse)
+  return getEntityById(keys)
+})
+
 const propertyLoader = new DataLoader(keys => {
+  keys = keys.map(JSON.parse)
   return getPropByName(keys)
 })
+
+const getEntityById = keys => {
+  let entityIds = {}
+  let lang = keys[0][1]
+  keys.forEach(key => {
+    let [entityId, _] = key
+    entityIds[entityId] = true
+  })
+
+  const params = {
+    action: 'wbgetentities',
+    ids: Object.keys(entityIds).join('|'),
+    languages: lang.split(',').join('|'),
+    props: ['aliases', 'descriptions', 'labels', 'sitelinks/urls'].join('|'),
+    format: 'json',
+    sitefilter: `${lang}wiki`
+  }
+
+  return axios
+    .get('https://www.wikidata.org/w/api.php', { params })
+    .then(response => response.data.entities)
+    .then(entities => {
+      if (!entities) return []
+
+      return keys.map(key => {
+        let [id, lang] = key
+        return {
+          id,
+          lang,
+          label: entities[id].labels[lang].value,
+          description: entities[id].descriptions[lang].value,
+          sitelink: entities[id].sitelinks[`${lang}wiki`].url,
+          aliases: entities[id].aliases[lang].map(i => i.value)
+        }
+      })
+    })
+}
 
 const getPropByName = keys => {
   let entityIds = {}
@@ -51,4 +94,4 @@ const getPropByName = keys => {
     })
 }
 
-export { propertyLoader }
+export { entityLoader, propertyLoader }
