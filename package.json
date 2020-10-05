@@ -2,9 +2,11 @@
   "name": "wikigraph",
   "version": "0.0.1",
   "description": "GraphQL API for quick access to data from Wikidata",
-  "main": "src/server.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node_modules/.bin/rollup -c && node ./dist/index.js"
+    "dev": "npx rollup -c -w",
+    "build": "NODE_ENV=production npx rollup -c",
+    "start": "node ./dist/index.js"
   },
   "author": "Arhey",
   "license": "MIT",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-run": "^2.0.2",
     "rollup": "^2.28.2"
   }
 }
