@@ -3,8 +3,17 @@ import json from '@rollup/plugin-json'
 export default {
   input: 'src/server.js',
   output: {
-    file: 'index.js',
+    file: 'dist/index.js',
     format: 'cjs'
   },
-  plugins: [json()]
+  plugins: [json()],
+  external: [
+    'axios',
+    'dataloader',
+    'express',
+    'express-graphql',
+    'graphql',
+    'numeral',
+    '@sindresorhus/slugify'
+  ]
 }
