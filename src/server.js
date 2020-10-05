@@ -3,7 +3,7 @@ import express from 'express'
 import schema from './schema.js'
 
 const app = express()
-const port = 4000
+const port = process.env.PORT || 4000
 
 app.use(
   '/graphql',
@@ -13,8 +13,9 @@ app.use(
   })
 )
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+app.listen(port, err => {
+  if (err) throw err
+  console.log(`> Server is running at 'http://localhost:${port}'`)
 })
 
 module.exports = app
