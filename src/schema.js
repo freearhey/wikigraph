@@ -12,9 +12,11 @@ import EntityType from './types/entity.js'
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
     name: 'Query',
+    description: `The query root of Wikidata's GraphQL interface.`,
     fields: () => ({
       entity: {
         type: EntityType,
+        description: `Lookup an entity by ID.`,
         args: {
           id: {
             type: new GraphQLNonNull(GraphQLString),
@@ -30,6 +32,7 @@ export default new GraphQLSchema({
       },
       search: {
         type: new GraphQLList(EntityType),
+        description: `Searches for entities using labels.`,
         args: {
           query: { type: new GraphQLNonNull(GraphQLString), description: 'Search for this text.' },
           lang: {

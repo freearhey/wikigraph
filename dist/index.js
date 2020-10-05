@@ -128244,9 +128244,11 @@ var EntityType = new graphql.GraphQLObjectType({
 var schema = new graphql.GraphQLSchema({
   query: new graphql.GraphQLObjectType({
     name: 'Query',
+    description: `The query root of Wikidata's GraphQL interface.`,
     fields: () => ({
       entity: {
         type: EntityType,
+        description: `Lookup an entity by ID.`,
         args: {
           id: {
             type: new graphql.GraphQLNonNull(graphql.GraphQLString),
@@ -128262,6 +128264,7 @@ var schema = new graphql.GraphQLSchema({
       },
       search: {
         type: new graphql.GraphQLList(EntityType),
+        description: `Searches for entities using labels.`,
         args: {
           query: { type: new graphql.GraphQLNonNull(graphql.GraphQLString), description: 'Search for this text.' },
           lang: {
