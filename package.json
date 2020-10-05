@@ -1,6 +1,6 @@
 {
   "name": "wikigraph",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GraphQL API for quick access to data from Wikidata",
   "main": "dist/index.js",
   "scripts": {
