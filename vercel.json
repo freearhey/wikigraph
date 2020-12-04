@@ -6,7 +6,7 @@
     "use": "@now/node"
   }],
   "rewrites": [{
-    "source": "/.*",
+    "source": "/(.*)",
     "destination": "dist/index.js"
   }],
   "env": {
