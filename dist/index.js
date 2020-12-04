@@ -2,6 +2,7 @@
 
 var expressGraphql = require('express-graphql');
 var express = require('express');
+var cors = require('cors');
 var graphql = require('graphql');
 var axios = require('axios');
 var numeral = require('numeral');
@@ -11,6 +12,7 @@ var slugify = require('@sindresorhus/slugify');
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
 var express__default = /*#__PURE__*/_interopDefaultLegacy(express);
+var cors__default = /*#__PURE__*/_interopDefaultLegacy(cors);
 var axios__default = /*#__PURE__*/_interopDefaultLegacy(axios);
 var numeral__default = /*#__PURE__*/_interopDefaultLegacy(numeral);
 var DataLoader__default = /*#__PURE__*/_interopDefaultLegacy(DataLoader);
@@ -128292,6 +128294,7 @@ var schema = new graphql.GraphQLSchema({
 const port = process.env.PORT || 4000;
 const app = express__default['default']();
 
+app.use(cors__default['default']());
 app.use('/graphql', expressGraphql.graphqlHTTP({ schema: schema, graphiql: true }));
 
 app.listen(port, err => {

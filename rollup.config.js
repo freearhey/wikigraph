@@ -12,6 +12,7 @@ export default {
   plugins: [json(), dev && run()],
   external: [
     'axios',
+    'cors',
     'dataloader',
     'express',
     'express-graphql',
