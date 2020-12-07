@@ -1,6 +1,6 @@
 {
   "name": "wikigraph",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "GraphQL API for quick access to data from Wikidata",
   "main": "dist/index.js",
   "scripts": {
@@ -17,8 +17,7 @@
     "dataloader": "^2.0.0",
     "express": "^4.17.1",
     "express-graphql": "^0.11.0",
-    "graphql": "^15.3.0",
-    "numeral": "^2.0.6"
+    "graphql": "^15.3.0"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.1.0",

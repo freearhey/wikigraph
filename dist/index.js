@@ -5,7 +5,6 @@ var express = require('express');
 var cors = require('cors');
 var graphql = require('graphql');
 var axios = require('axios');
-var numeral = require('numeral');
 var DataLoader = require('dataloader');
 var slugify = require('@sindresorhus/slugify');
 
@@ -14,38 +13,35 @@ function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'defau
 var express__default = /*#__PURE__*/_interopDefaultLegacy(express);
 var cors__default = /*#__PURE__*/_interopDefaultLegacy(cors);
 var axios__default = /*#__PURE__*/_interopDefaultLegacy(axios);
-var numeral__default = /*#__PURE__*/_interopDefaultLegacy(numeral);
 var DataLoader__default = /*#__PURE__*/_interopDefaultLegacy(DataLoader);
 var slugify__default = /*#__PURE__*/_interopDefaultLegacy(slugify);
 
 var queryBuilder = {
-    property(args) {
-        const lang = args[0] ? args[0].lang : 'en';
+  property(args) {
+    const lang = args[0] ? args[0].lang : 'en';
 
-        let query = `SELECT ?entity ?prop ?statement (?vLabel as ?value) (?tLabel as ?type) (?uLabel as ?unit)`;
+    let query = `SELECT ?entity ?prop ?statement (?vLabel as ?value)`;
 
-        query += ` WHERE {`;
+    query += ` WHERE {`;
 
-        query += ` VALUES (?entity ?prop ?ps ?psv ) {`;
+    query += ` VALUES (?entity ?prop ?ps ) {`;
 
-        args.forEach(i => {
-            query += ` (wd:${i.entityId} p:${i.propId} ps:${i.propId} psv:${i.propId})`;
-        });
+    args.forEach(i => {
+      query += ` (wd:${i.entityId} p:${i.propId} ps:${i.propId})`;
+    });
 
-        query += `}`;
+    query += `}`;
 
-        query += ` OPTIONAL { ?entity ?prop ?statement . ?statement ?ps ?v }`;
+    query += ` OPTIONAL { ?entity ?prop ?statement . ?statement ?ps ?v }`;
 
-        query += ` OPTIONAL { ?entity ?prop ?statement . ?statement ?ps ?v . ?statement ?psv ?vnode . ?vnode rdf:type ?t . ?vnode wikibase:quantityUnit ?u . }`;
+    query += `filter (!isLiteral(?statement) || lang(?statement) = "" || lang(?statement) = "${lang}")`;
 
-        query += `filter (!isLiteral(?statement) || lang(?statement) = "" || lang(?statement) = "${lang}")`;
+    query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}" . ?v rdfs:label ?vLabel }`;
 
-        query += `SERVICE wikibase:label { bd:serviceParam wikibase:language "${lang}" . ?t rdfs:label ?tLabel . ?v rdfs:label ?vLabel . ?u rdfs:label ?uLabel }`;
+    query += `}`;
 
-        query += `}`;
-
-        return query
-    }
+    return query
+  }
 };
 
 var props = [
@@ -128183,21 +128179,11 @@ const getPropByName = keys => {
         let [entityId, lang, propName] = key;
         let prop = wdProps.find(propName);
         let items = entities.filter(item => {
-          return item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
+          return item.entity.value.endsWith(entityId) && item.prop.value.endsWith(prop.id)
         });
 
         return items.map(item => {
-          let type = item.type ? item.type.value : null;
-          let value = item.value ? item.value.value : null;
-          let unit = item.unit ? item.unit.value : null;
-
-          if (type && type.indexOf('QuantityValue') > -1) {
-            value = numeral__default['default'](value).format('0,0');
-
-            return [value, unit].filter(v => v).join(' ')
-          }
-
-          return value
+          return item.value ? item.value.value : null
         })
       })
     })
