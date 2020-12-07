@@ -1,5 +1,4 @@
 import axios from 'axios'
-import numeral from 'numeral'
 import DataLoader from 'dataloader'
 import queryBuilder from './queryBuilder.js'
 import wdProps from './wikidata-properties/index.js'
@@ -117,21 +116,11 @@ const getPropByName = keys => {
         let [entityId, lang, propName] = key
         let prop = wdProps.find(propName)
         let items = entities.filter(item => {
-          return item.entity.value.indexOf(entityId) > -1 && item.prop.value.indexOf(prop.id) > -1
+          return item.entity.value.endsWith(entityId) && item.prop.value.endsWith(prop.id)
         })
 
         return items.map(item => {
-          let type = item.type ? item.type.value : null
-          let value = item.value ? item.value.value : null
-          let unit = item.unit ? item.unit.value : null
-
-          if (type && type.indexOf('QuantityValue') > -1) {
-            value = numeral(value).format('0,0')
-
-            return [value, unit].filter(v => v).join(' ')
-          }
-
-          return value
+          return item.value ? item.value.value : null
         })
       })
     })
