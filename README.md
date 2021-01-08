@@ -147,4 +147,4 @@ If you find a bug or want to contribute to the code or documentation, you can he
 
 ## License
 
-[MIT](LICENSE.md)
+[MIT](LICENSE)
