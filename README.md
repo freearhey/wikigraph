@@ -41,7 +41,7 @@ fetch('https://wikigraph.vercel.app/graphql', {
 
 ## Supported Operations
 
-**search**
+### search
 
 Searches for entities using labels.
 
@@ -80,7 +80,7 @@ Response:
 }
 ```
 
-**entity**
+### entity
 
 Lookup an entity by ID.
 
