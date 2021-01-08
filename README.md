@@ -117,7 +117,7 @@ Response:
 
 ## Available Properties
 
-You can get the value of any property by its slug. For example query:
+You can get the value of any [Wikidata property](https://www.wikidata.org/wiki/Wikidata:List_of_properties) by its slug. For example query:
 
 ```graphql
 {
