@@ -1,4 +1,4 @@
-# Wikidata GraphQL API
+# WikiGraph
 
 GraphQL API for quick access to Wikidata.
 
